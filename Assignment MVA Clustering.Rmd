@@ -514,12 +514,21 @@ fviz_dend(res.hc, k = 4, # Cut in four groups
           rect = TRUE # Add rectangle around groups
           )
 ```
-```{R}
-# Lets see what the optimal numbers of clusers are
-# Compute
-res.nbclust <- USArrests %>% scale() %>% NbClust(distance = "euclidean", min.nc = 2, max.nc = 10, method = "complete", index ="all") 
-```
 
+
+Viewing heigh based on cluster hierachy and have observation:
+
+total height = -1 for excellent and very good
+
+total height = -2 for bad, poor, average and good
+
+Cluster 2 seems to have better-defined clusters with higher average silhouette width, indicating that the observations within Cluster 2 are more similar to each other and distinct from observations in other clusters.
+
+
+Cluster 1, on the other hand, has a lower average silhouette width, suggesting that the observations within this cluster may not be as well-separated from observations in other clusters, potentially indicating less distinct clusters or overlap between clusters.
+
+
+A higher average silhouette width generally indicates better clustering quality, as it implies that the clusters are more distinct and well-separated.
 ```{r}
 # Quality of Clustering
 
