@@ -1,0 +1,544 @@
+---
+title: "Assignment MVA Cluster Analysis"
+output: html_document
+date: "2024-03-09"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{R}
+
+# Load required libraries
+library(cluster)     # For cluster analysis
+library(readr)       # For reading data files
+library(factoextra)  # For visualizing multivariate analysis results
+library(magrittr)    # For using the pipe operator %>%
+library(NbClust)     # For determining the optimal number of clusters
+
+```
+
+```{r}
+#for loading csv data
+library(readr)
+
+# Read the CSV file
+df <- read_csv("C:/Rutgers/Subjects/Spring Sem/Multivariate Analysis/Data/wine_new.csv")
+
+#dataframe
+df
+
+```
+
+
+
+
+selected these columns because of positive and negative correlation, other columns were not beneficial for analysis
+```{R}
+# Assuming df is your dataframe
+attach(df)
+
+#selected these columns because of positive and negative correlation, other columns were not beneficial for analysis
+selected_cols <- df[, c("volatile acidity", "citric acid", "chlorides", "sulphates", "alcohol","quality")]
+
+selected_cols
+```
+
+
+
+
+column 6 which is quality (Categorical: Target variable)
+Range parameters: Bad, Poor, Average, Good, Very Good, Excellent
+
+Why I chose these attributes for cluster?
+
+Answer:
+
+volatile acidity: neagtively correlated to target variable
+
+Citric acid: Positively correlated
+
+similar correlation for columns selected showing no randomness
+
+
+Group by quality and calculate the average of all other attributes within each group 
+
+Also assigning groups(random) Assigning groups to target variable:
+
+Ideal range of quality is mention below (ascending)
+
+group number is random
+
+ Bad: 2
+ Poor: 5 
+ Average: 1
+ Good: 4 
+ Very Good: 6
+ Excellent: 3
+
+
+
+```{r}
+
+
+# Group by column 6 and calculate the average of all other columns within each group
+grouped_avg <- aggregate(. ~ quality, data = selected_cols[, -6], FUN = mean)
+
+# Print the grouped averages
+print(grouped_avg)
+
+
+```
+
+
+setting target variable as row name by removing it first
+
+grouping values based on alcohol and assigning a value to target variable based on that
+
+Observation:
+
+as alcohol content increase quality of alcohol also improves as highest scores are assigned to excellent quality of wine based on group number
+
+Lowest values of alcohol are assigned to bad quality wine 
+
+values of alcohol content is increasing with range bad to excellent
+```{R}
+# Set the first column as row names
+row.names(grouped_avg) <- grouped_avg[, 1]  # Assuming the first column contains row names
+
+# Remove the first column from the dataframe
+grouped_avg <- grouped_avg[, -1]
+
+# View the dataframe
+grouped_avg
+```
+
+
+
+Observation:
+
+as alcohol content increase quality of alcohol also improves as highest scores are assigned to excellent quality of wine based on group number
+
+Lowest values of alcohol are assigned to bad quality wine 
+
+values of alcohol content is increasing with range bad to excellent
+
+
+based on this we can observe correlation of attribute with respect to target variable as i mentioned above
+
+
+Scaled values give a picture of positive and negative correlation in range 1 to -1
+
+positive value of attributes means correlated
+
+Negative value of attributes means negatively correlated
+```{R}
+matstd.can <- scale(grouped_avg)
+matstd.can
+```
+
+
+Calculating Euclidean distance of target variable values:
+
+
+Excellent has highest distance to Bad which is worst quality of wine
+
+The distance is less for similar quality example:
+
+[1] Excellent and very good
+
+[2] Poor and Bad
+```{R}
+# Creating a (Euclidean) distance matrix of the standardized data 
+dist.wine <- dist(matstd.can, method="euclidean")
+dist.wine
+```
+
+Invoking Hierarchial cluster with method single
+```{r}
+# Invoking hclust command (cluster analysis by single linkage method)      
+cluswine.nn <- hclust(dist.wine, method = "single") 
+```
+
+
+Observation:
+Excellent and very good quality of wine have a single parent
+
+Poor and Good are in same branch. (Average quality wine is also in same branch)
+
+Bad quality wine which has score extremely low is standalone branch in heirarchial cluster
+
+Number of Hierarchies: 3
+
+we can form 2 groups:
+
+[1] Excellent and very good quality
+
+[2] Bad, Average, Poor and Good
+```{r}
+# Plotting vertical dendrogram      
+# create extra margin room in the dendrogram, on the bottom (Canine species' labels)
+#par(mar=c(6, 4, 4, 2) + 0.1)
+plot(as.dendrogram(cluswine.nn),ylab="Distance between wine quality",ylim=c(0,2.5),main="Dendrogram of 12 qualities of wine")
+```
+
+
+Applying scaling again for new operation
+
+Volatile Acidity: The "Bad" quality category tends to have significantly higher volatile acidity compared to other categories, while "Very Good" and "Excellent" categories have lower than average volatile acidity.
+
+
+Citric Acid: The "Bad" and "Poor" quality categories exhibit lower citric acid levels compared to the other categories, with "Excellent" having the highest average citric acid content.
+
+
+Chlorides: The "Bad" quality category shows the highest chloride content, followed by "Average" and "Very Good" categories. "Excellent" quality wines tend to have the lowest chloride content.
+
+
+Sulphates: "Excellent" quality wines tend to have the highest sulphate content, while "Poor" quality wines have the lowest.
+
+
+Alcohol: "Excellent" quality wines have the highest alcohol content, while "Bad" quality wines have the lowest.
+
+
+Overall, these observations suggest that certain chemical properties like volatile acidity, citric acid, chlorides, sulphates, and alcohol content vary significantly across different quality categories of wines.
+
+```{R}
+
+
+matstd.can
+matstd.wine_new <- scale(matstd.can[,1:5])
+matstd.wine_new
+```
+
+
+Observation:
+Excellent and very good quality of wine have a single parent
+
+Poor and Good are in same branch. (Average quality wine is also in same branch)
+
+Bad quality wine which has score extremely low is standalone branch in heirarchial cluster
+
+Number of Hierarchies: 3
+
+we can form 2 groups:
+
+[1] Excellent and very good quality
+
+[2] Bad, Average, Poor and Good
+
+
+```{R}
+# Creating a (Euclidean) distance matrix of the standardized data
+dist.employ <- dist(matstd.wine_new, method="euclidean")
+# Invoking hclust command (cluster analysis by single linkage method)
+clusemploy.nn <- hclust(dist.employ, method = "single")
+
+plot(as.dendrogram(clusemploy.nn),ylab="Distance between Quality wine",ylim=c(0,6),
+     main="Dendrogram. Quality of wine and hierarchy")
+```
+
+
+```{r}
+plot(as.dendrogram(clusemploy.nn), xlab= "Distance between quality wine", xlim=c(6,0),
+     horiz = TRUE,main="Dendrogram. Quality of wine and hierarchy vertical")
+```
+```{R}
+# We will use agnes function as it allows us to select option for data standardization, the distance measure and clustering algorithm in one single function
+
+agn.employ <- agnes(matstd.can, metric="euclidean", stand=TRUE, method = "single")
+```
+
+
+
+Merging operation and making 2 clusters:
+
+The agn.employ$merge output appears to show the sequence of cluster merging in an agglomerative hierarchical clustering process. Each row represents a step in the merging process. The two numbers in each row indicate the indices of the clusters that were merged at that step.
+
+For example, the first row 1 2 suggests that clusters 1 and 2 were merged initially. The second row 3 5 suggests that clusters 3 and 5 were merged next, and so on.
+
+This information is crucial for understanding the hierarchical structure of the clustering process and can be used to determine the hierarchy of clusters and the relationships between them.
+
+```{R}
+#  Description of cluster merging
+agn.employ$merge
+```
+
+
+Agglomerative clustering is more accurate with producing hierarchy
+
+It mapped the wine quality more accurately:
+
+instead of pairing good and poor quality wine, it is pairing poor and average quality wine
+
+Also it is assigning different branch to good, which is more accurate.
+
+Rest of the observations are same
+```{R}
+#Dendogram
+plot(as.dendrogram(agn.employ), xlab= "Distance between Wine",xlim=c(8,0),
+     horiz = TRUE,main="Dendrogram \n Wine Quality hierarchy")
+```
+
+
+
+The agglomerative coefficient here tells us that the data tends to form clusters to some extent. With a coefficient of 0.4, it means that there's a moderate tendency for the data points to group together. This suggests that there might be some identifiable patterns or similarities among the data points, but these clusters might not be as clear-cut or distinct as they would be if the coefficient were closer to 1.
+
+```{R}
+#Interactive Plots
+#plot(agn.employ,ask=TRUE)
+plot(agn.employ, which.plots=1)
+plot(agn.employ, which.plots=2)
+plot(agn.employ, which.plots=3)
+```
+
+Looking at the standardized data, it seems we're dealing with various attributes related to wine quality. Each row represents a different category or quality level, and the columns represent different features like volatile acidity, citric acid, chlorides, sulphates, and alcohol content.
+
+By standardizing the data, we've made it easier to compare across different features. Now, when we apply K-means clustering, we're essentially trying to find natural groupings within the data based on these standardized features. We're exploring how wines might naturally cluster together based on their characteristics.
+
+We're trying different values of k, which determine the number of clusters we're looking for. Each cluster represents a group of wines that share similar characteristics according to the features we've selected.
+
+However, without seeing the actual results of the clustering or knowing the specific goals of the analysis, it's hard to make definitive conclusions. The interpretation of the clusters would depend on the context of the data and what we're ultimately trying to achieve with this analysis.
+
+```{r}
+# K-Means Clustering
+
+matstd.wine_new <- scale(matstd.can[,1:5])
+# K-means, k=2, 3, 4, 5, 6
+# Centers (k's) are numbers thus, 10 random sets are chosen
+
+matstd.wine_new
+```
+
+ we've divided the wines into two clusters. Cluster 1, which contains "Excellent" and "Very Good" quality wines, exhibits higher levels of volatile acidity, citric acid, chlorides, sulphates, and alcohol compared to Cluster 2, where wines like "Average", "Bad", "Good", and "Poor" are found.
+
+The within-cluster sum of squares indicates how tightly packed the wines are within each group, and it seems like Cluster 2 is more tightly clustered.
+
+The percentage of variation accounted for by the two clusters is around 74.4%, suggesting that our clustering method has effectively captured a significant portion of the variability in the data.
+
+In summary, our K-means clustering has successfully separated wines into two distinct groups based on their standardized attributes, with one group showing higher overall levels across the features.
+```{R}
+(kmeans2.employ <- kmeans(matstd.wine_new,2,nstart = 10))
+# Computing the percentage of variation accounted for. Two clusters
+perc.var.2 <- round(100*(1 - kmeans2.employ$betweenss/kmeans2.employ$totss),1)
+names(perc.var.2) <- "Perc. 2 clus"
+perc.var.2
+```
+
+ partitioned the wines into three clusters. Cluster 1, with "Excellent" and "Very Good" wines, still displays higher levels of volatile acidity, citric acid, chlorides, sulphates, and alcohol compared to Cluster 3, which contains "Average", "Good", and "Poor" wines. Cluster 2, represented by the "Bad" quality wine, stands out with its distinct attributes.
+
+The within-cluster sum of squares suggests that the wines in Cluster 2 are perfectly grouped, while the other clusters have some variability within them.
+
+The percentage of variation accounted for by the three clusters is approximately 90.8%, indicating that our clustering method has effectively captured a substantial portion of the data's variability.
+
+In summary, our K-means clustering has effectively segmented the wines into three distinct groups based on their standardized attributes, with each cluster exhibiting different characteristics in terms of quality and chemical composition.
+```{R}
+
+# Computing the percentage of variation accounted for. Three clusters
+(kmeans3.employ <- kmeans(matstd.wine_new,3,nstart = 10))
+perc.var.3 <- round(100*(1 - kmeans3.employ$betweenss/kmeans3.employ$totss),1)
+names(perc.var.3) <- "Perc. 3 clus"
+perc.var.3
+
+```
+
+Observation:
+
+Cluster 1 has moderate volatile acidity, low citric acid, relatively high chlorides, low sulphates, and low alcohol content.
+
+
+Cluster 2 is characterized by high volatile acidity, low citric acid, high chlorides, low sulphates, and low alcohol content.
+
+
+Cluster 3 exhibits relatively low volatile acidity, low citric acid, low chlorides, moderate sulphates, and moderate alcohol content.
+
+
+Cluster 4 shows low volatile acidity, high citric acid, low chlorides, high sulphates, and high alcohol content.
+
+best % score indicating 4 clusters is good
+```{R}
+# Computing the percentage of variation accounted for. Four clusters
+(kmeans4.employ <- kmeans(matstd.wine_new,4,nstart = 10))
+perc.var.4 <- round(100*(1 - kmeans4.employ$betweenss/kmeans4.employ$totss),1)
+names(perc.var.4) <- "Perc. 4 clus"
+perc.var.4
+
+
+```
+
+```{R}
+# Computing the percentage of variation accounted for. Five clusters
+(kmeans5.employ <- kmeans(matstd.wine_new,5,nstart = 10))
+perc.var.5 <- round(100*(1 - kmeans5.employ$betweenss/kmeans5.employ$totss),1)
+names(perc.var.5) <- "Perc. 5 clus"
+perc.var.5
+(kmeans6.employ <- kmeans(matstd.wine_new,3,nstart = 10))
+```
+
+the K-means clustering with six clusters may not provide a meaningful segmentation of the data, as it explains only a small percentage of the overall variability. Adjusting the number of clusters or exploring alternative clustering algorithms may be necessary to obtain more interpretable and useful results.
+```{R}
+# Computing the percentage of variation accounted for. Six clusters
+perc.var.6 <- round(100*(1 - kmeans6.employ$betweenss/kmeans6.employ$totss),1)
+names(perc.var.6) <- "Perc. 6 clus"
+perc.var.6
+```
+
+Inference:
+
+The clustering solution with 2 clusters explains the highest percentage of variation among the options provided, indicating that it provides a relatively better representation of the underlying structure in the data compared to solutions with more clusters.
+
+
+With only two clusters, the solution is simpler and easier to interpret compared to solutions with more clusters, making it potentially more useful for practical applications.
+
+
+The cluster means and within-cluster sum of squares for the two clusters can provide valuable insights into the characteristics and differences between the clusters, helping to understand the underlying patterns in the data more effectively.
+
+
+While the solution with 2 clusters may provide a good starting point for analysis, it's essential to consider the specific context and goals of the analysis when determining the most appropriate number of clusters. In some cases, a more nuanced understanding of the data may require exploring solutions with a higher number of cluster
+```{R}
+attributes(perc.var.6)
+Variance_List <- c(perc.var.2,perc.var.3,perc.var.4,perc.var.5,perc.var.6)
+
+Variance_List
+plot(Variance_List)
+```
+
+
+
+Cluster 1: This cluster includes wines categorized as "Average" and "Poor".
+
+Cluster 2: Wines labeled as "Bad" belong to this cluster.
+
+Cluster 3: This cluster consists of wines categorized as "Good".
+
+Cluster 4: Wines labeled as "Excellent" and "Very Good" are grouped into this cluster.
+
+```{R}
+#
+# Saving four k-means clusters in a list
+clus1 <- matrix(names(kmeans4.employ$cluster[kmeans4.employ$cluster == 1]), 
+                ncol=1, nrow=length(kmeans4.employ$cluster[kmeans4.employ$cluster == 1]))
+colnames(clus1) <- "Cluster 1"
+clus2 <- matrix(names(kmeans4.employ$cluster[kmeans4.employ$cluster == 2]), 
+                ncol=1, nrow=length(kmeans4.employ$cluster[kmeans4.employ$cluster == 2]))
+colnames(clus2) <- "Cluster 2"
+clus3 <- matrix(names(kmeans4.employ$cluster[kmeans4.employ$cluster == 3]), 
+                ncol=1, nrow=length(kmeans4.employ$cluster[kmeans4.employ$cluster == 3]))
+colnames(clus3) <- "Cluster 3"
+clus4 <- matrix(names(kmeans4.employ$cluster[kmeans4.employ$cluster == 4]), 
+                ncol=1, nrow=length(kmeans4.employ$cluster[kmeans4.employ$cluster == 4]))
+colnames(clus4) <- "Cluster 4"
+list(clus1,clus2,clus3,clus4)
+
+
+```
+
+
+Based on heatmap: Data matrix we can observe that Excellent and very good are strongly correlated and colored as blue
+
+Bad, Poor, Average, Good have a similar behaviour based on clusters formed
+```{R}
+
+# Assuming matstd.can is your data matrix
+
+# Calculate the distance matrix
+dist_matrix <- dist(matstd.can)
+
+# Visualize the distance matrix
+fviz_dist(dist_matrix, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+
+```
+
+Observation:
+
+Performing clustering using 2 clusters:
+
+Very good and Excellent quality wine are in the same cluster
+
+Bad, Poor, Average and good are in same cluster but highly seperated,
+
+Bad seems to lie seperately
+
+Poor and Average are very close
+
+Good is also little close to Poor and Average
+```{R}
+# Load required libraries
+library(factoextra)
+
+# Visualize the optimal number of clusters using the gap statistic
+fviz_nbclust(matstd.can, kmeans, method = "gap_stat", k.max = 2)
+
+set.seed(123)
+km.res <- kmeans(matstd.can, 2, nstart = 25)
+# Visualize
+fviz_cluster(km.res, data = matstd.can,
+             ellipse.type = "convex",
+             palette = "jco",
+             ggtheme = theme_minimal())
+```
+
+No. of cluster=3 
+
+This clustering provides more accurate clusters:
+
+Cluster 1: Excellent and Very good
+
+Cluster 2: Poor, Average and Good
+
+Cluster 3: Bad quality wine is seperated
+```{R}
+# If your data has outliears , use PAM method
+pam.res <- pam(matstd.can, 3)
+# Visualize
+fviz_cluster(pam.res)
+
+# Hierarchial Clusiering
+res.hc <- matstd.can %>% scale() %>% dist(method = "euclidean") %>%
+  hclust(method = "ward.D2")
+```
+
+This is perfect example of grouping based on hierarchial clusters:
+
+Cluster group 1: Excellent and Very good share the same branch
+
+Cluster 2: Poor, Average share the same branch 
+
+Cluster 3: Good quality wine is also seperated
+
+Cluster 4: Bad quality wine is seperated
+
+```{r}
+fviz_dend(res.hc, k = 4, # Cut in four groups
+          cex = 0.5, # label size
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE, # color labels by groups
+          rect = TRUE # Add rectangle around groups
+          )
+```
+```{R}
+# Lets see what the optimal numbers of clusers are
+# Compute
+res.nbclust <- USArrests %>% scale() %>% NbClust(distance = "euclidean", min.nc = 2, max.nc = 10, method = "complete", index ="all") 
+```
+
+```{r}
+# Quality of Clustering
+
+set.seed(123)
+# Enhanced hierarchical clustering, cut in 3 groups
+res.hc <- matstd.can[, -1] %>% scale() %>%
+  eclust("hclust", k = 2, graph = FALSE)
+
+# Visualize with factoextra
+fviz_dend(res.hc, palette = "jco",
+          rect = TRUE, show_labels = FALSE)
+
+#Inspect the silhouette plot:
+fviz_silhouette(res.hc)
+
+# Silhouette width of observations
+sil <- res.hc$silinfo$widths[, 1:3]
+
+# Objects with negative silhouette
+neg_sil_index <- which(sil[, 'sil_width'] < 0)
+sil[neg_sil_index, , drop = FALSE]
+```
